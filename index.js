@@ -2,12 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const checkoutRoutes = require('./routes/checkout'); // <-- ✅ CORREGIDO
 
-const app = express();
+const app = express(); // <-- ✅ MOVIDO ARRIBA
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/api', checkoutRoutes); // <-- ✅ MOVIDO ABAJO
 
 const categoriasDeLujo = [
     'supercar',
@@ -70,7 +73,7 @@ app.get('/api/categorias', (req, res) => {
     res.json(categoriasConInfo);
 });
 
-// Rutas para autos igual que antes...
+// Rutas para autos
 app.get('/api/autos', async (req, res) => {
     try {
         const autos = await Auto.find();

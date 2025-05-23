@@ -69,8 +69,8 @@ app.post('/api/auth/login', async (req, res) => {
     try {
         await stytchClient.magicLinks.email.loginOrCreate({
             email,
-            login_magic_link_url: 'http://localhost:3000/auth/verify',
-            signup_magic_link_url: 'http://localhost:3000/auth/verify',
+            login_magic_link_url: 'https://grovecustom.vercel.app/auth/verify',
+            signup_magic_link_url: 'https://grovecustom.vercel.app/auth/verify',
         });
         res.status(200).json({ message: 'Email enviado con link mágico' });
     } catch (error) {

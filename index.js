@@ -25,6 +25,8 @@ app.use(cors({
     credentials: true, // si usas cookies o headers de autenticación
 }));
 
+app.use(express.json()); // 👈 ESTO ES LO QUE FALTABA
+
 
 // Tu esquema y modelo de Auto (igual que antes)
 const categoriasDeLujo = [

@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 const stytchClient = new Stytch.Client({
     project_id: process.env.STYTCH_PROJECT_ID,
     secret: process.env.STYTCH_SECRET,
-    env: process.env.STYTCH_ENV || 'test',
+    env: envs.test,
 });
 
 app.use(cors());

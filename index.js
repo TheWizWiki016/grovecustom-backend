@@ -2,16 +2,22 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const checkoutRoutes = require('./routes/checkout'); // <-- ✅ CORREGIDO
+const Stytch = require('stytch');
 
-const app = express(); // <-- ✅ MOVIDO ARRIBA
+const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Configura Stytch
+const stytchClient = new Stytch.Client({
+    project_id: process.env.STYTCH_PROJECT_ID,
+    secret: process.env.STYTCH_SECRET,
+    env: process.env.STYTCH_ENV || 'test',
+});
 
 app.use(cors());
 app.use(express.json());
 
-app.use('/api', checkoutRoutes); // <-- ✅ MOVIDO ABAJO
-
+// Tu esquema y modelo de Auto (igual que antes)
 const categoriasDeLujo = [
     'supercar',
     'hypercar',
@@ -22,28 +28,12 @@ const categoriasDeLujo = [
     'deportivo-clasico'
 ];
 
-const categoriasConInfo = [
-    { value: 'supercar', label: 'Supercar', color: 'red' },
-    { value: 'hypercar', label: 'Hypercar', color: 'purple' },
-    { value: 'luxury-sedan', label: 'Sedán de Lujo', color: 'blue' },
-    { value: 'luxury-suv', label: 'SUV de Lujo', color: 'green' },
-    { value: 'convertible', label: 'Convertible', color: 'yellow' },
-    { value: 'coupe-gran-turismo', label: 'Coupé Gran Turismo', color: 'orange' },
-    { value: 'deportivo-clasico', label: 'Deportivo Clásico', color: 'indigo' }
-];
-
-// Conectar a MongoDB Atlas
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('🟢 Conectado a MongoDB Atlas'))
-    .catch(err => console.error('❌ Error MongoDB:', err));
-
 const autoSchema = new mongoose.Schema({
     marca: String,
     modelo: String,
     año: Number,
     precio: Number,
     descripcion: String,
-
     potencia: String,
     caballosFuerza: Number,
     cilindrada: String,
@@ -51,15 +41,12 @@ const autoSchema = new mongoose.Schema({
     tipoCombustible: String,
     transmision: String,
     traccion: String,
-
     largo: String,
     ancho: String,
     alto: String,
     peso: String,
-
     imagenes: [String],
     videos: [String],
-
     categoria: {
         type: String,
         enum: categoriasDeLujo,
@@ -69,11 +56,56 @@ const autoSchema = new mongoose.Schema({
 
 const Auto = mongoose.model('Auto', autoSchema);
 
-app.get('/api/categorias', (req, res) => {
-    res.json(categoriasConInfo);
+// Conectar MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('🟢 Conectado a MongoDB Atlas'))
+    .catch(err => console.error('❌ Error MongoDB:', err));
+
+// Rutas Stytch
+
+// Enviar magic link para login o registro
+app.post('/api/auth/login', async (req, res) => {
+    const { email } = req.body;
+    try {
+        await stytchClient.magicLinks.email.loginOrCreate({
+            email,
+            login_magic_link_url: 'http://localhost:3000/auth/verify',
+            signup_magic_link_url: 'http://localhost:3000/auth/verify',
+        });
+        res.status(200).json({ message: 'Email enviado con link mágico' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Rutas para autos
+// Verificar token del magic link
+app.post('/api/auth/verify', async (req, res) => {
+    const { token } = req.body;
+    try {
+        const response = await stytchClient.magicLinks.authenticate({
+            token,
+            session_duration_minutes: 60,
+        });
+        // Retorna datos de usuario y sesión
+        res.status(200).json({ user: response.user, session: response.session });
+    } catch (error) {
+        res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+});
+
+// Rutas autos (igual que antes)
+app.get('/api/categorias', (req, res) => {
+    res.json([
+        { value: 'supercar', label: 'Supercar', color: 'red' },
+        { value: 'hypercar', label: 'Hypercar', color: 'purple' },
+        { value: 'luxury-sedan', label: 'Sedán de Lujo', color: 'blue' },
+        { value: 'luxury-suv', label: 'SUV de Lujo', color: 'green' },
+        { value: 'convertible', label: 'Convertible', color: 'yellow' },
+        { value: 'coupe-gran-turismo', label: 'Coupé Gran Turismo', color: 'orange' },
+        { value: 'deportivo-clasico', label: 'Deportivo Clásico', color: 'indigo' }
+    ]);
+});
+
 app.get('/api/autos', async (req, res) => {
     try {
         const autos = await Auto.find();

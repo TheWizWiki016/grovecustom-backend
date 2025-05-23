@@ -2,13 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const Stytch = require('stytch');
+const { Client, envs } = require('stytch');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Configura Stytch
-const stytchClient = new Stytch.Client({
+const stytchClient = new Client({
     project_id: process.env.STYTCH_PROJECT_ID,
     secret: process.env.STYTCH_SECRET,
     env: envs.test,

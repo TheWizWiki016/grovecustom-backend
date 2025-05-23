@@ -14,8 +14,19 @@ const stytchClient = new Client({
     env: envs.test,
 });
 
-app.use(cors());
-app.use(express.json());
+const cors = require('cors');
+
+// Configura CORS con orígenes permitidos
+const allowedOrigins = [
+    'http://localhost:3000', // para desarrollo local
+    'https://grovecustom.vercel.app' // para producción si usas Vercel
+];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true, // si usas cookies o headers de autenticación
+}));
+
 
 // Tu esquema y modelo de Auto (igual que antes)
 const categoriasDeLujo = [

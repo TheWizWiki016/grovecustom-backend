@@ -14,8 +14,6 @@ const stytchClient = new Client({
     env: envs.test,
 });
 
-const cors = require('cors');
-
 // Configura CORS con orígenes permitidos
 const allowedOrigins = [
     'http://localhost:3000', // para desarrollo local

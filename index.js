@@ -2,26 +2,25 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
-// Configura CORS con orígenes permitidos
+// Configura CORS
 const allowedOrigins = [
-    'http://localhost:3000', // para desarrollo local
-    'https://grovecustom.vercel.app' // para producción si usas Vercel
+    'http://localhost:3000',
+    'https://grovecustom.vercel.app'
 ];
 
 app.use(cors({
     origin: allowedOrigins,
-    credentials: true, // si usas cookies o headers de autenticación
+    credentials: true,
 }));
 
-app.use(express.json()); // 👈 ESTO ES LO QUE FALTABA
+app.use(express.json());
 
-
-// Tu esquema y modelo de Auto (igual que antes)
+// Esquema y modelo para Autos
 const categoriasDeLujo = [
     'supercar',
     'hypercar',
@@ -58,16 +57,14 @@ const autoSchema = new mongoose.Schema({
     }
 });
 
-const Auto = mongoose.model('Auto', autoSchema);
+const Auto = mongoose.models.Auto || mongoose.model('Auto', autoSchema);
 
-// Conectar MongoDB
+// Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('🟢 Conectado a MongoDB Atlas'))
     .catch(err => console.error('❌ Error MongoDB:', err));
 
-
-
-// Rutas autos (igual que antes)
+// Rutas para autos y categorías
 app.get('/api/categorias', (req, res) => {
     res.json([
         { value: 'supercar', label: 'Supercar', color: 'red' },
@@ -129,51 +126,7 @@ app.delete('/api/autos/:id', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
-});
-
-
-
-// ------------------------------------------------
-
-const loginUserSchema = new mongoose.Schema({
-    email: { type: String, unique: true },
-    password: String,
-    name: String,
-});
-
-const User = mongoose.model('Usuario', loginUserSchema);
-
-// Ruta POST /api/login para validar usuario
-app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(401).json({ error: 'Usuario no encontrado' });
-        }
-
-        // Para demo simple: comparar texto plano (mejor usar bcrypt en producción)
-        if (user.password !== password) {
-            return res.status(401).json({ error: 'Contraseña incorrecta' });
-        }
-
-        // Si todo bien, devolver datos usuario (sin password)
-        const { _id, email: userEmail, name } = user;
-        res.json({ id: _id, email: userEmail, name });
-    } catch (error) {
-        res.status(500).json({ error: 'Error en servidor' });
-    }
-});
-
-
-// ------------------------------------------------
-
-const bcrypt = require('bcrypt');
-
-// Simulación de modelo de Usuario (ajusta a tu esquema real o crea uno aparte)
+// Esquema y modelo UNIFICADO para usuarios
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -181,9 +134,9 @@ const userSchema = new mongoose.Schema({
     rol: { type: String, default: 'user' }
 });
 
-const Usuario = mongoose.model('Usuario', userSchema);
+const Usuario = mongoose.models.Usuario || mongoose.model('Usuario', userSchema);
 
-// Ruta de registro
+// Ruta POST /api/register
 app.post('/api/register', async (req, res) => {
     try {
         const { email, password, nombre } = req.body;
@@ -213,3 +166,28 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// Ruta POST /api/login
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await Usuario.findOne({ email });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
+        }
+
+        const { _id, email: userEmail, nombre } = user;
+        res.json({ id: _id, email: userEmail, nombre });
+    } catch (error) {
+        res.status(500).json({ error: 'Error en servidor' });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
+});

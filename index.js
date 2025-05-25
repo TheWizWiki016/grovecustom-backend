@@ -166,7 +166,8 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Ruta POST /api/login
+// En tu archivo backend (index.js o donde tengas las rutas)
+
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -181,12 +182,17 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Contraseña incorrecta' });
         }
 
-        const { _id, email: userEmail, nombre } = user;
-        res.json({ id: _id, email: userEmail, nombre });
+        // Devuelve id en lugar de _id, y conviértelo a string para evitar problemas
+        res.json({
+            id: user._id.toString(),
+            email: user.email,
+            nombre: user.nombre
+        });
     } catch (error) {
         res.status(500).json({ error: 'Error en servidor' });
     }
 });
+
 
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);

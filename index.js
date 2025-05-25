@@ -191,3 +191,28 @@ app.post('/api/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
 });
+
+
+
+// Ruta GET /api/users/:id
+app.get('/api/users/:id', async (req, res) => {
+    try {
+        const user = await Usuario.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener usuario', detalles: err.message });
+    }
+});
+
+
+// Ruta PUT /api/users/:id
+app.put('/api/users/:id', async (req, res) => {
+    try {
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!usuarioActualizado) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json(usuarioActualizado);
+    } catch (err) {
+        res.status(400).json({ error: 'Error al actualizar usuario', detalles: err.message });
+    }
+});

@@ -2,17 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const { Client, envs } = require('stytch');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configura Stytch
-const stytchClient = new Client({
-    project_id: process.env.STYTCH_PROJECT_ID,
-    secret: process.env.STYTCH_SECRET,
-    env: envs.test,
-});
 
 // Configura CORS con orígenes permitidos
 const allowedOrigins = [
@@ -72,37 +65,7 @@ mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('🟢 Conectado a MongoDB Atlas'))
     .catch(err => console.error('❌ Error MongoDB:', err));
 
-// Rutas Stytch
 
-// Enviar magic link para login o registro
-app.post('/api/auth/login', async (req, res) => {
-    const { email } = req.body;
-    try {
-        await stytchClient.magicLinks.email.loginOrCreate({
-            email,
-            login_magic_link_url: 'https://grovecustom.vercel.app/auth/verify',
-            signup_magic_link_url: 'https://grovecustom.vercel.app/auth/verify',
-        });
-        res.status(200).json({ message: 'Email enviado con link mágico' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Verificar token del magic link
-app.post('/api/auth/verify', async (req, res) => {
-    const { token } = req.body;
-    try {
-        const response = await stytchClient.magicLinks.authenticate({
-            token,
-            session_duration_minutes: 60,
-        });
-        // Retorna datos de usuario y sesión
-        res.status(200).json({ user: response.user, session: response.session });
-    } catch (error) {
-        res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-});
 
 // Rutas autos (igual que antes)
 app.get('/api/categorias', (req, res) => {
@@ -168,4 +131,39 @@ app.delete('/api/autos/:id', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
+});
+
+
+
+// ------------------------------------------------
+
+const userSchema = new mongoose.Schema({
+    email: { type: String, unique: true },
+    password: String,
+    name: String,
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Ruta POST /api/login para validar usuario
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Para demo simple: comparar texto plano (mejor usar bcrypt en producción)
+        if (user.password !== password) {
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
+        }
+
+        // Si todo bien, devolver datos usuario (sin password)
+        const { _id, email: userEmail, name } = user;
+        res.json({ id: _id, email: userEmail, name });
+    } catch (error) {
+        res.status(500).json({ error: 'Error en servidor' });
+    }
 });

@@ -137,13 +137,13 @@ app.listen(PORT, () => {
 
 // ------------------------------------------------
 
-const userSchema = new mongoose.Schema({
+const loginUserSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     name: String,
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', loginUserSchema);
 
 // Ruta POST /api/login para validar usuario
 app.post('/api/login', async (req, res) => {
@@ -167,3 +167,49 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: 'Error en servidor' });
     }
 });
+
+
+// ------------------------------------------------
+
+const bcrypt = require('bcrypt');
+
+// Simulación de modelo de Usuario (ajusta a tu esquema real o crea uno aparte)
+const userSchema = new mongoose.Schema({
+    email: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
+    nombre: String,
+    rol: { type: String, default: 'user' }
+});
+
+const Usuario = mongoose.model('Usuario', userSchema);
+
+// Ruta de registro
+app.post('/api/register', async (req, res) => {
+    try {
+        const { email, password, nombre } = req.body;
+
+        if (!email || !password || !nombre) {
+            return res.status(400).json({ error: 'Faltan campos requeridos' });
+        }
+
+        const usuarioExistente = await Usuario.findOne({ email });
+        if (usuarioExistente) {
+            return res.status(400).json({ error: 'El usuario ya existe' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const nuevoUsuario = new Usuario({
+            email,
+            password: hashedPassword,
+            nombre
+        });
+
+        await nuevoUsuario.save();
+
+        res.status(201).json({ message: 'Usuario registrado correctamente' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al registrar usuario', detalles: error.message });
+    }
+});
+

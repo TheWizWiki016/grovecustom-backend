@@ -143,7 +143,7 @@ const loginUserSchema = new mongoose.Schema({
     name: String,
 });
 
-const User = mongoose.model('User', loginUserSchema);
+const User = mongoose.model('Usuario', loginUserSchema);
 
 // Ruta POST /api/login para validar usuario
 app.post('/api/login', async (req, res) => {

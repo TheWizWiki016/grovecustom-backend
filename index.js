@@ -261,6 +261,8 @@ app.get('/api/comentarios/:autoId', async (req, res) => {
 
 
 app.post('/api/comentarios', async (req, res) => {
+    console.log("BODY RECIBIDO:", req.body); // Agregado para debug
+
     try {
         const { autoId, usuarioId, contenido, calificacion, parentId } = req.body;
 

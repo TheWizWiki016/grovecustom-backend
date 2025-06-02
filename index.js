@@ -379,3 +379,13 @@ app.post('/api/citas', async (req, res) => {
         res.status(500).json({ error: 'Error al guardar la cita', detalles: error.message });
     }
 });
+
+
+app.get('/api/citas/usuario/:usuarioId', async (req, res) => {
+    try {
+        const citas = await Cita.find({ usuarioId: req.params.usuarioId }).populate('autoId');
+        res.json(citas);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener las citas', detalles: error.message });
+    }
+});

@@ -375,6 +375,7 @@ app.post('/api/citas', async (req, res) => {
         const citaGuardada = await nuevaCita.save();
         res.status(201).json(citaGuardada);
     } catch (error) {
+        console.error('Error al guardar la cita:', error); // <--- Esto te dará el error real en consola
         res.status(500).json({ error: 'Error al guardar la cita', detalles: error.message });
     }
 });

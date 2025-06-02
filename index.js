@@ -74,8 +74,24 @@ const comentarioSchema = new mongoose.Schema({
 
 const Comentario = mongoose.models.Comentario || mongoose.model('Comentario', comentarioSchema);
 
+// --- Esquema y modelo para Citas ---
+const citaSchema = new mongoose.Schema({
+    autoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auto', required: true },
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+    fechaCita: { type: String, required: true },
+    horaCita: { type: String, required: true },
+    tipoServicio: { type: String, required: true },
+    ubicacion: { type: String, required: true },
+    direccion: String,
+    telefono: { type: String, required: true },
+    email: { type: String, required: true },
+    comentarios: String,
+    esDomicilio: { type: Boolean, default: false },
+    concesionarioIndex: { type: Number, default: 0 },
+    creadoEn: { type: Date, default: Date.now }
+});
 
-
+const Cita = mongoose.models.Cita || mongoose.model('Cita', citaSchema);
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -315,5 +331,50 @@ app.put('/api/comentarios/:id', async (req, res) => {
         res.json(comentarioActualizado);
     } catch (error) {
         res.status(400).json({ error: 'Error al actualizar comentario', detalles: error.message });
+    }
+});
+
+// --- Ruta para guardar una cita ---
+app.post('/api/citas', async (req, res) => {
+    try {
+        const {
+            autoId,
+            usuarioId,
+            fechaCita,
+            horaCita,
+            tipoServicio,
+            ubicacion,
+            direccion,
+            telefono,
+            email,
+            comentarios,
+            esDomicilio,
+            concesionarioIndex
+        } = req.body;
+
+        // Validación básica
+        if (!autoId || !usuarioId || !fechaCita || !horaCita || !tipoServicio || !ubicacion || !telefono || !email) {
+            return res.status(400).json({ error: 'Faltan datos requeridos para la cita' });
+        }
+
+        const nuevaCita = new Cita({
+            autoId,
+            usuarioId,
+            fechaCita,
+            horaCita,
+            tipoServicio,
+            ubicacion,
+            direccion,
+            telefono,
+            email,
+            comentarios,
+            esDomicilio,
+            concesionarioIndex
+        });
+
+        const citaGuardada = await nuevaCita.save();
+        res.status(201).json(citaGuardada);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al guardar la cita', detalles: error.message });
     }
 });

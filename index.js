@@ -220,7 +220,8 @@ app.post('/api/login', async (req, res) => {
         res.json({
             id: user._id.toString(),
             email: user.email,
-            nombre: user.nombre
+            nombre: user.nombre,
+            rol: user.rol
         });
     } catch (error) {
         res.status(500).json({ error: 'Error en servidor' });

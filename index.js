@@ -390,3 +390,22 @@ app.get('/api/citas/usuario/:usuarioId', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener las citas', detalles: error.message });
     }
 });
+
+app.get('/api/users', async (req, res) => {
+    try {
+        const usuarios = await Usuario.find().select('-password'); // excluye la contraseña
+        res.json(usuarios);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        const eliminado = await Usuario.findByIdAndDelete(req.params.id);
+        if (!eliminado) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json({ message: 'Usuario eliminado' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar usuario' });
+    }
+});

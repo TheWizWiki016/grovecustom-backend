@@ -425,17 +425,17 @@ const Venta = mongoose.models.Venta || mongoose.model('Venta', ventaSchema);
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// Ruta para crear pago
 app.post('/api/pago', async (req, res) => {
     const { autoId, usuarioId, precio } = req.body;
+
     try {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
                 price_data: {
                     currency: 'mxn',
-                    product_data: { name: `Compra de auto: ${autoId}` },
-                    unit_amount: precio * 100
+                    product_data: { name: `Auto ${autoId}` },
+                    unit_amount: Math.round(precio * 100)
                 },
                 quantity: 1
             }],
@@ -443,9 +443,11 @@ app.post('/api/pago', async (req, res) => {
             success_url: `${process.env.FRONTEND_URL}/exito?autoId=${autoId}&usuarioId=${usuarioId}&precio=${precio}`,
             cancel_url: `${process.env.FRONTEND_URL}/autos/${autoId}`
         });
+
         res.json({ id: session.id });
     } catch (err) {
-        res.status(500).json({ error: 'Error creando sesión de Stripe', detalles: err.message });
+        console.error('❌ Stripe error:', err);
+        res.status(500).json({ error: 'No se pudo crear la sesión de pago', detalles: err.message });
     }
 });
 

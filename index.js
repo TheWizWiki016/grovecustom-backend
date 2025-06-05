@@ -409,3 +409,64 @@ app.delete('/api/users/:id', async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar usuario' });
     }
 });
+
+
+
+// Modelo de venta
+const ventaSchema = new mongoose.Schema({
+    autoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auto', required: true },
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+    monto: Number,
+    fecha: { type: Date, default: Date.now },
+    estado: { type: String, default: 'completado' }
+});
+
+const Venta = mongoose.models.Venta || mongoose.model('Venta', ventaSchema);
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Ruta para crear pago
+app.post('/api/pago', async (req, res) => {
+    const { autoId, usuarioId, precio } = req.body;
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [{
+                price_data: {
+                    currency: 'mxn',
+                    product_data: { name: `Compra de auto: ${autoId}` },
+                    unit_amount: precio * 100
+                },
+                quantity: 1
+            }],
+            mode: 'payment',
+            success_url: `${process.env.FRONTEND_URL}/exito?autoId=${autoId}&usuarioId=${usuarioId}&precio=${precio}`,
+            cancel_url: `${process.env.FRONTEND_URL}/autos/${autoId}`
+        });
+        res.json({ id: session.id });
+    } catch (err) {
+        res.status(500).json({ error: 'Error creando sesión de Stripe', detalles: err.message });
+    }
+});
+
+// Ruta para registrar venta (desde success_url)
+app.post('/api/ventas', async (req, res) => {
+    const { autoId, usuarioId, monto } = req.body;
+    try {
+        const venta = new Venta({ autoId, usuarioId, monto });
+        await venta.save();
+        res.status(201).json(venta);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al registrar venta', detalles: error.message });
+    }
+});
+
+// Obtener ventas por usuario
+app.get('/api/ventas/usuario/:usuarioId', async (req, res) => {
+    try {
+        const ventas = await Venta.find({ usuarioId: req.params.usuarioId }).populate('autoId');
+        res.json(ventas);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
+    }
+});

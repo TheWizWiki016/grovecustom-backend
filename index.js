@@ -482,3 +482,11 @@ app.get('/api/ventas', async (req, res) => {
     }
 });
 
+app.get('/api/citas', async (req, res) => {
+    try {
+        const citas = await Cita.find().populate('autoId usuarioId');
+        res.json(citas);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener citas', detalles: error.message });
+    }
+});

@@ -220,7 +220,7 @@ app.post('/api/login', async (req, res) => {
 
         // Devuelve id en lugar de _id, y conviértelo a string para evitar problemas
         res.json({
-            _id: user._id, // <-- debe ser _id, no id
+            _id: user._id.toString(), // <-- ¡Asegúrate de convertirlo a string!
             email: user.email,
             nombre: user.nombre,
             rol: user.rol

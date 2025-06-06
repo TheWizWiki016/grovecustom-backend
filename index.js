@@ -253,7 +253,7 @@ app.get('/api/users/:id', async (req, res) => {
 app.put('/api/users/:id', upload.single('profileImage'), async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         // Validar que el usuario exista
         const usuarioExistente = await Usuario.findById(userId);
         if (!usuarioExistente) {
@@ -302,9 +302,9 @@ app.put('/api/users/:id', upload.single('profileImage'), async (req, res) => {
 
         // Actualizar el usuario
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
-            userId, 
-            datosActualizacion, 
-            { 
+            userId,
+            datosActualizacion,
+            {
                 new: true,
                 runValidators: true // Ejecutar validaciones del esquema
             }
@@ -335,26 +335,26 @@ app.put('/api/users/:id', upload.single('profileImage'), async (req, res) => {
 
         // Manejar diferentes tipos de errores
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ 
-                error: 'Datos de validación incorrectos', 
+            return res.status(400).json({
+                error: 'Datos de validación incorrectos',
                 detalles: Object.values(error.errors).map(err => err.message)
             });
         }
 
         if (error.name === 'CastError') {
-            return res.status(400).json({ 
-                error: 'ID de usuario inválido' 
+            return res.status(400).json({
+                error: 'ID de usuario inválido'
             });
         }
 
         if (error.message === 'Solo se permiten archivos de imagen') {
-            return res.status(400).json({ 
-                error: 'Tipo de archivo no válido. Solo se permiten imágenes.' 
+            return res.status(400).json({
+                error: 'Tipo de archivo no válido. Solo se permiten imágenes.'
             });
         }
 
-        res.status(500).json({ 
-            error: 'Error interno del servidor al actualizar usuario', 
+        res.status(500).json({
+            error: 'Error interno del servidor al actualizar usuario',
             detalles: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
         });
     }
@@ -444,6 +444,7 @@ app.post('/api/citas', async (req, res) => {
 
 app.get('/api/citas/usuario/:usuarioId', async (req, res) => {
     try {
+        console.log('Buscando citas para usuarioId:', req.params.usuarioId);
         const citas = await Cita.find({ usuarioId: req.params.usuarioId }).populate('autoId');
         res.json(citas);
     } catch (error) {
@@ -493,7 +494,7 @@ app.post('/api/pago', async (req, res) => {
             payment_method_types: ['card'],
             line_items: [{
                 price_data: {
-                    currency: 'mxn',
+                    currency: 'usd',
                     product_data: { name: `Auto ${autoId}` },
                     unit_amount: Math.round(precio * 100)
                 },
@@ -591,7 +592,7 @@ app.post('/api/comentarios', async (req, res) => {
 app.delete('/api/users/:id/profile-image', async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         const usuario = await Usuario.findById(userId);
         if (!usuario) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -628,7 +629,7 @@ app.delete('/api/users/:id/profile-image', async (req, res) => {
 
     } catch (error) {
         console.error('Error al eliminar imagen de perfil:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error al eliminar imagen de perfil',
             detalles: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
         });

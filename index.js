@@ -275,48 +275,6 @@ app.get('/api/comentarios/:autoId', async (req, res) => {
     }
 });
 
-
-app.post('/api/comentarios', async (req, res) => {
-    console.log("BODY RECIBIDO:", req.body); // Agregado para debug
-
-    try {
-        const { autoId, usuarioId, contenido, calificacion, parentId } = req.body;
-
-        // Validaciones básicas
-        if (!autoId || !usuarioId || !contenido) {
-            return res.status(400).json({ error: 'Faltan datos requeridos' });
-        }
-
-        // Crear el nuevo comentario o respuesta
-        const nuevoComentario = new Comentario({
-            autoId,
-            usuarioId,
-            contenido,
-            calificacion: calificacion || null,
-            parentId: parentId || null
-        });
-
-        const comentarioGuardado = await nuevoComentario.save();
-
-        // Si es una respuesta, actualizar el comentario padre
-        if (parentId) {
-            await Comentario.findByIdAndUpdate(parentId, {
-                $push: { respuestas: comentarioGuardado._id }
-            });
-        }
-
-        // Devuelve el comentario completo (opcionalmente con datos poblados)
-        const comentarioCompleto = await Comentario.findById(comentarioGuardado._id)
-            .populate('usuarioId', 'nombre email') // si quieres incluir datos del usuario
-            .populate('respuestas');
-
-        res.status(201).json(comentarioCompleto);
-    } catch (error) {
-        console.error('Error al guardar comentario:', error);
-        res.status(500).json({ error: 'Error en el servidor' });
-    }
-});
-
 app.put('/api/comentarios/:id', async (req, res) => {
     try {
         const { contenido, calificacion } = req.body;

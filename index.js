@@ -472,3 +472,13 @@ app.get('/api/ventas/usuario/:usuarioId', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
     }
 });
+
+app.get('/api/ventas', async (req, res) => {
+    try {
+        const ventas = await Venta.find().populate('autoId');
+        res.json(ventas);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener ventas', detalles: error.message });
+    }
+});
+

@@ -524,7 +524,6 @@ app.post('/api/ventas', async (req, res) => {
     }
 });
 
-// Obtener ventas por usuario
 app.get('/api/ventas/usuario/:usuarioId', async (req, res) => {
     try {
         console.log('Buscando ventas para usuarioId:', req.params.usuarioId);
@@ -535,7 +534,6 @@ app.get('/api/ventas/usuario/:usuarioId', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
     }
 });
-
 app.get('/api/ventas', async (req, res) => {
     try {
         const ventas = await Venta.find().populate('autoId');

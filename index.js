@@ -60,19 +60,17 @@ const autoSchema = new mongoose.Schema({
 const Auto = mongoose.models.Auto || mongoose.model('Auto', autoSchema);
 
 
+// backend/models/Comentario.js o donde definas el esquema
 const comentarioSchema = new mongoose.Schema({
     autoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auto', required: true },
-    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: false }, // <--- CAMBIO AQUÍ
-    contenido: String,
-    calificacion: Number,
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: false }, // <--- Debe ser false
+    contenido: { type: String, required: true },
+    calificacion: { type: Number, default: null },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comentario', default: null },
     respuestas: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comentario' }],
-    likes: [String],
-    dislikes: [String],
-    nombreAnonimo: { type: String, default: null }, // <--- asegúrate de tener este campo
+    nombreAnonimo: { type: String, default: null }, // <--- Debe existir
     creadoEn: { type: Date, default: Date.now }
 });
-
 const Comentario = mongoose.models.Comentario || mongoose.model('Comentario', comentarioSchema);
 
 // --- Esquema y modelo para Citas ---

@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -247,13 +250,113 @@ app.get('/api/users/:id', async (req, res) => {
 
 
 // Ruta PUT /api/users/:id
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', upload.single('profileImage'), async (req, res) => {
     try {
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!usuarioActualizado) return res.status(404).json({ error: 'Usuario no encontrado' });
-        res.json(usuarioActualizado);
-    } catch (err) {
-        res.status(400).json({ error: 'Error al actualizar usuario', detalles: err.message });
+        const userId = req.params.id;
+        
+        // Validar que el usuario exista
+        const usuarioExistente = await Usuario.findById(userId);
+        if (!usuarioExistente) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Preparar los datos a actualizar
+        const datosActualizacion = {
+            nombre: req.body.nombre,
+            email: req.body.email,
+            telefono: req.body.telefono,
+            direccion: req.body.direccion,
+            ciudad: req.body.ciudad,
+            codigoPostal: req.body.codigoPostal,
+            fechaNacimiento: req.body.fechaNacimiento,
+            profesion: req.body.profesion,
+            intereses: req.body.intereses,
+            marcaFavorita: req.body.marcaFavorita,
+            updatedAt: new Date()
+        };
+
+        // Si se subió una nueva imagen de perfil
+        if (req.file) {
+            // Si el usuario ya tenía una imagen anterior, eliminarla de Cloudinary
+            if (usuarioExistente.profileImagePublicId) {
+                try {
+                    await cloudinary.uploader.destroy(usuarioExistente.profileImagePublicId);
+                    console.log('Imagen anterior eliminada de Cloudinary');
+                } catch (deleteError) {
+                    console.error('Error al eliminar imagen anterior:', deleteError);
+                    // No bloqueamos la actualización por este error
+                }
+            }
+
+            // Agregar los datos de la nueva imagen
+            datosActualizacion.profileImageUrl = req.file.path;
+            datosActualizacion.profileImagePublicId = req.file.public_id;
+        }
+
+        // Filtrar valores undefined o vacíos para no sobrescribir datos existentes
+        Object.keys(datosActualizacion).forEach(key => {
+            if (datosActualizacion[key] === undefined || datosActualizacion[key] === '') {
+                delete datosActualizacion[key];
+            }
+        });
+
+        // Actualizar el usuario
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+            userId, 
+            datosActualizacion, 
+            { 
+                new: true,
+                runValidators: true // Ejecutar validaciones del esquema
+            }
+        );
+
+        // Remover datos sensibles de la respuesta
+        const usuarioRespuesta = usuarioActualizado.toObject();
+        delete usuarioRespuesta.password;
+        delete usuarioRespuesta.__v;
+
+        res.json({
+            message: 'Perfil actualizado correctamente',
+            user: usuarioRespuesta
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error);
+
+        // Si hubo error y se subió una imagen, intentar limpiar Cloudinary
+        if (req.file && req.file.public_id) {
+            try {
+                await cloudinary.uploader.destroy(req.file.public_id);
+                console.log('Imagen temporal eliminada de Cloudinary debido al error');
+            } catch (cleanupError) {
+                console.error('Error al limpiar imagen temporal:', cleanupError);
+            }
+        }
+
+        // Manejar diferentes tipos de errores
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ 
+                error: 'Datos de validación incorrectos', 
+                detalles: Object.values(error.errors).map(err => err.message)
+            });
+        }
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({ 
+                error: 'ID de usuario inválido' 
+            });
+        }
+
+        if (error.message === 'Solo se permiten archivos de imagen') {
+            return res.status(400).json({ 
+                error: 'Tipo de archivo no válido. Solo se permiten imágenes.' 
+            });
+        }
+
+        res.status(500).json({ 
+            error: 'Error interno del servidor al actualizar usuario', 
+            detalles: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+        });
     }
 });
 
@@ -482,5 +585,52 @@ app.post('/api/comentarios', async (req, res) => {
     } catch (error) {
         console.error('Error al guardar comentario:', error);
         res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+app.delete('/api/users/:id/profile-image', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        
+        const usuario = await Usuario.findById(userId);
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        if (!usuario.profileImagePublicId) {
+            return res.status(400).json({ error: 'El usuario no tiene imagen de perfil' });
+        }
+
+        // Eliminar de Cloudinary
+        await cloudinary.uploader.destroy(usuario.profileImagePublicId);
+
+        // Actualizar en la base de datos
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+            userId,
+            {
+                $unset: {
+                    profileImageUrl: "",
+                    profileImagePublicId: ""
+                },
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        const usuarioRespuesta = usuarioActualizado.toObject();
+        delete usuarioRespuesta.password;
+        delete usuarioRespuesta.__v;
+
+        res.json({
+            message: 'Imagen de perfil eliminada correctamente',
+            user: usuarioRespuesta
+        });
+
+    } catch (error) {
+        console.error('Error al eliminar imagen de perfil:', error);
+        res.status(500).json({ 
+            error: 'Error al eliminar imagen de perfil',
+            detalles: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+        });
     }
 });

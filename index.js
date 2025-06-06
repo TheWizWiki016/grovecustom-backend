@@ -490,3 +490,40 @@ app.get('/api/citas', async (req, res) => {
         res.status(500).json({ error: 'Error al obtener citas', detalles: error.message });
     }
 });
+
+
+app.post('/api/comentarios', async (req, res) => {
+    try {
+        const { autoId, usuarioId, contenido, calificacion, parentId, nombreAnonimo } = req.body;
+
+        if (!autoId || !contenido || (!usuarioId && !nombreAnonimo)) {
+            return res.status(400).json({ error: 'Faltan datos requeridos' });
+        }
+
+        const nuevoComentario = new Comentario({
+            autoId,
+            usuarioId: usuarioId || null,
+            contenido,
+            calificacion: calificacion || null,
+            parentId: parentId || null,
+            nombreAnonimo: nombreAnonimo || null
+        });
+
+        const comentarioGuardado = await nuevoComentario.save();
+
+        if (parentId) {
+            await Comentario.findByIdAndUpdate(parentId, {
+                $push: { respuestas: comentarioGuardado._id }
+            });
+        }
+
+        const comentarioCompleto = await Comentario.findById(comentarioGuardado._id)
+            .populate('usuarioId', 'nombre email')
+            .populate('respuestas');
+
+        res.status(201).json(comentarioCompleto);
+    } catch (error) {
+        console.error('Error al guardar comentario:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});

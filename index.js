@@ -62,13 +62,14 @@ const Auto = mongoose.models.Auto || mongoose.model('Auto', autoSchema);
 
 const comentarioSchema = new mongoose.Schema({
     autoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auto', required: true },
-    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: false }, // <--- CAMBIO AQUÍ
     contenido: String,
     calificacion: Number,
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comentario', default: null },
     respuestas: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comentario' }],
-    likes: [String], // lista de userId
+    likes: [String],
     dislikes: [String],
+    nombreAnonimo: { type: String, default: null }, // <--- asegúrate de tener este campo
     creadoEn: { type: Date, default: Date.now }
 });
 

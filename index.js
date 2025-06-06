@@ -478,10 +478,9 @@ const ventaSchema = new mongoose.Schema({
     autoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auto', required: true },
     usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
     monto: Number,
-    fecha: { type: Date, default: Date.now },
-    estado: { type: String, default: 'completado' }
+    estado: String,
+    fecha: Date
 });
-
 const Venta = mongoose.models.Venta || mongoose.model('Venta', ventaSchema);
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -526,11 +525,12 @@ app.post('/api/ventas', async (req, res) => {
 
 app.get('/api/ventas/usuario/:usuarioId', async (req, res) => {
     try {
-        console.log('Buscando ventas para usuarioId:', req.params.usuarioId);
-        const ventas = await Venta.find({ usuarioId: req.params.usuarioId }).populate('autoId');
+        const usuarioObjectId = new mongoose.Types.ObjectId(req.params.usuarioId);
+        const ventas = await Venta.find({ usuarioId: usuarioObjectId }).populate('autoId');
         console.log('Ventas encontradas:', ventas.length);
         res.json(ventas);
     } catch (error) {
+        console.error('Error al obtener las ventas:', error);
         res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
     }
 });
